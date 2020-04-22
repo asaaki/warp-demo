@@ -13,7 +13,7 @@ opt-level = 3
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arrayvec = { version = "0.5", features = ["serde", "array-sizes-33-128"] }
+arraystring = { version = "0.3", features = ["serde-traits"] }
 futures = "0.3"
 hyper = "0.13"
 log = "0.4"
@@ -25,3 +25,13 @@ tokio = { version = "0.2", features = ["macros", "rt-util"] }
 tower-service = "0.3"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 warp = "0.2"
+
+[dev-dependencies]
+arrayvec = { version = "0.5", features = ["serde", "array-sizes-33-128"] }
+criterion = "0.3"
+criterion-cycles-per-byte = "0.1"
+# needs some newer features: staticvec = "0.9" # features: serde_support
+
+[[bench]]
+name = "fixedstrings"
+harness = false

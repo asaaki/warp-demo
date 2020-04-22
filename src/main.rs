@@ -73,9 +73,8 @@ use warp::{
 // ===== custom request ID structure, note: all types must be Copy'able! =====
 
 const REQUEST_ID_PREFIX_INTERNAL: &'static str = "internal-";
-const REQUEST_ID_DATA_LENGTH: usize = 64; // usually sufficiently enough space for common request ID data
-pub type InnerRequestIdData = [u8; REQUEST_ID_DATA_LENGTH];
-pub type RequestIdData = arrayvec::ArrayString<InnerRequestIdData>;
+
+type RequestIdData = arraystring::CacheString;
 
 #[derive(Debug, Copy, Clone, Serialize)]
 enum RequestIdScope {
@@ -101,33 +100,22 @@ impl RequestId {
         let uuid_string = uuid::Uuid::new_v4().to_hyphenated_ref().to_string();
         Self {
             scope: RequestIdScope::Internal,
-            data: RequestIdData::from(&uuid_string).unwrap(),
+            data: RequestIdData::from_str_truncate(&uuid_string)
         }
     }
 
     fn from_external(data: &str) -> Self {
         RequestId {
             scope: RequestIdScope::External,
-            data: RequestIdData::from(data).unwrap(),
+            data: RequestIdData::from_str_truncate(data)
         }
-    }
-
-    // preferred and safe way to fill the array string, never allow external data to blow it up
-    fn from_external_truncated(unbounded: &str) -> Self {
-        // dirty way of getting the correct upper bound
-        let min_length: usize = *[unbounded.len(), REQUEST_ID_DATA_LENGTH]
-            .iter()
-            .min()
-            .unwrap(); // infallible at this point
-        let (truncated, _) = unbounded.split_at(min_length);
-        Self::from_external(truncated)
     }
 
     // try to get the header value and use a truncated version, otherwise fall back to internal if missing or parsing error
     fn from_headers_or_internal(headers: &HeaderMap) -> Self {
         match headers.get("x-request-id") {
             Some(hvalue) => match hvalue.to_str() {
-                Ok(valid) => RequestId::from_external_truncated(valid),
+                Ok(valid) => RequestId::from_external(valid),
                 Err(_) => RequestId::generate_internal(),
             },
             None => RequestId::generate_internal(),

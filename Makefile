@@ -1,7 +1,9 @@
 # warp-demo
+debug: fmt
+	cargo build
 
 release: fmt
-	cargo build --release
+	RUSTFLAGS="-C target-cpu=native" cargo build --release
 
 RUN_CMD = target/release/warp-demo
 
@@ -17,6 +19,9 @@ debug: fmt
 fmt:
 	cargo fmt
 
+bench:
+	RUSTFLAGS="-C target-cpu=native" cargo bench
+
 REQUEST_URL = http://localhost:3030/math/4
 REQUEST_HEADER_GOOD = -H 'div-by: 2'
 REQUEST_HEADER_BAD = -H 'div-by: 0'
@@ -31,9 +36,9 @@ requests:
 	curl -i $(GOOD_REQUEST)
 	echo '=== success; external ID'
 	curl -i $(GOOD_REQUEST) $(REQ_ID_HEADER)
-	echo '=== success; internal ID'
+	echo '=== failure; internal ID'
 	curl -i $(BAD_REQUEST)
-	echo '=== success; external ID'
+	echo '=== failure; external ID'
 	curl -i $(BAD_REQUEST) $(REQ_ID_HEADER)
 
 # wrk2 for mac: https://github.com/giltene/wrk2/wiki/Installing-wrk2-on-Mac
@@ -43,9 +48,9 @@ perftest: requests
 	wrk $(WRK_SETTINGS) $(GOOD_REQUEST)
 	echo '=== success; external ID'
 	wrk $(WRK_SETTINGS) $(GOOD_REQUEST) $(REQ_ID_HEADER)
-	echo '=== success; internal ID'
+	echo '=== failure; internal ID'
 	wrk $(WRK_SETTINGS) $(BAD_REQUEST)
-	echo '=== success; external ID'
+	echo '=== failure; external ID'
 	wrk $(WRK_SETTINGS) $(BAD_REQUEST) $(REQ_ID_HEADER)
 
 # cargo install cargo-readme
